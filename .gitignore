@@ -3,4 +3,6 @@ __pycache__
 csv/*
 scratch/*
 logs/*
+!.gitkeep
+
 .env
