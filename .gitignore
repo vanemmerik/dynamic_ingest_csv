@@ -1,7 +1,7 @@
-auth
 csv
 scratch
 logs
+auth/__pycache__
 __pycache__
 
 .env
