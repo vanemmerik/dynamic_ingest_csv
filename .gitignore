@@ -2,4 +2,5 @@ auth/__pycache__
 __pycache__
 csv/*
 scratch/*
+logs/*
 .env
