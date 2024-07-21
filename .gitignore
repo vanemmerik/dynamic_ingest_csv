@@ -1,0 +1,7 @@
+auth
+csv
+scratch
+logs
+__pycache__
+
+.env
