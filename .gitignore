@@ -1,7 +1,5 @@
-csv
-scratch
-logs
 auth/__pycache__
 __pycache__
-
+csv/*
+scratch/*
 .env
