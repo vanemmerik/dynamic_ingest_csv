@@ -8,6 +8,7 @@ import re
 
 load_dotenv()
 
+ingest_profile = os.getenv('INGEST_PROFILE')
 csv_dir = os.getenv('CSV_PATH')
 csv_file = 'video_src.csv'
 csv_path = os.path.join(csv_dir, csv_file)
@@ -96,9 +97,9 @@ def ingest_media(video_id, video_url):
     url = f'https://ingest.api.brightcove.com/v1/accounts/{auth.account_id}/videos/{video_id}/ingest-requests'
     payload = {
         "master": {
-            "url": f'{video_url}'
+            "url": f"{video_url}"
         },
-        "profile": "multi-platform-extended-static-with-mp4",
+        "profile": f"{ingest_profile}"
     }
     response = requests.post(url, data=json.dumps(payload), headers=headers)
 
