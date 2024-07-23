@@ -18,12 +18,12 @@ last_processed_row_path = os.path.join(last_processed_row_path, last_processed_r
 
 vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv))$'
 
-# Function to save the last processed video ID
+# Function to save the last processed csv row
 def save_last_processed_row(row_number):
     with open(last_processed_row_path, 'w') as file:
         file.write(str(row_number))
 
-# Function to get the last processed video ID
+# Function to get the last processed csv row
 def get_last_processed_row():
     if os.path.exists(last_processed_row_path):
         with open(last_processed_row_path, 'r') as file:
