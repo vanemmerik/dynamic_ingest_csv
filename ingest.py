@@ -34,6 +34,27 @@ def get_last_processed_row():
                 return -1
     return -1
 
+def format_tags(tags):
+    valid_tag_pattern = re.compile(r'^[\w\s]+$')
+    tags_list = []
+    if isinstance(tags, list):
+        tags_list = tags
+    elif isinstance(tags, str):
+        try:
+            tags_list = json.loads(tags)
+            if not isinstance(tags_list, list):
+                raise ValueError
+        except (json.JSONDecodeError, ValueError):
+            tags_list = tags.split(',')
+            tags_list = [tag.strip() for tag in tags_list]
+    else:
+        raise ValueError("Unsupported format for tags input")
+    for tag in tags_list:
+        if not valid_tag_pattern.match(tag):
+            raise ValueError(f"Invalid tag value: {tag}")
+    # return json.dumps(tags_list)
+    return tags_list
+
 def is_valid_video_url(video_url):
     # Check if video_url is a string and perform validations
     if isinstance(video_url, str):
@@ -52,9 +73,10 @@ def read_csv():
             if current_row_number <= last_processed_row:
                 continue
 
-            video_name, video_description, video_long_description, video_url = row['name'], row['description'], row['long_description'], row['video_url']
+            video_name, video_tags, video_description, video_long_description, video_url = row['name'], row['tags'], row['description'], row['long_description'], row['video_url']
+            video_tags = format_tags(video_tags)
             is_valid_video_url(video_url)
-            create_media_object(video_name, video_description, video_long_description, video_url)
+            create_media_object(video_name, video_tags, video_description, video_long_description, video_url)
             save_last_processed_row(current_row_number)
 
             
@@ -69,7 +91,8 @@ def read_csv():
                 print(f"{last_processed_row_path} is already empty.")
         print("CSV processing has finished.")
 
-def create_media_object(video_name, video_description, video_long_description, video_url):
+def create_media_object(video_name, video_tags, video_description, video_long_description, video_url):
+    print(video_tags)
     auth = BrightcoveAuth()
     headers = auth.get_headers()
 
@@ -77,10 +100,7 @@ def create_media_object(video_name, video_description, video_long_description, v
     payload = {
         "description": f"{video_description}",
         "long_description": f"{video_long_description}",
-        "tags": [
-            "birds",
-            "sea"
-        ],
+        "tags": video_tags,
         "name": f"{video_name}"
     }
     response = requests.post(url, data=json.dumps(payload), headers=headers)

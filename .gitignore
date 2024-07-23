@@ -6,3 +6,4 @@ logs/*
 !.gitkeep
 
 .env
+.DS_Store
