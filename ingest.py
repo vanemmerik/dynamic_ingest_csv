@@ -92,7 +92,6 @@ def read_csv():
         print("CSV processing has finished.")
 
 def create_media_object(video_name, video_tags, video_description, video_long_description, video_url):
-    print(video_tags)
     auth = BrightcoveAuth()
     headers = auth.get_headers()
 
