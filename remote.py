@@ -124,6 +124,7 @@ def create_media_object(video_name, video_tags, video_description, video_long_de
 
 def add_remote_src(video_id, video_url):
     container = get_container(video_url)
+    print(container)
     if container == 'mp4':
         auth = BrightcoveAuth()
         headers = auth.get_headers()
