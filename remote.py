@@ -7,6 +7,7 @@ import sys
 import os
 import re
 import validators
+from tqdm import tqdm
 
 load_dotenv()
 
@@ -91,26 +92,34 @@ def read_csv():
         if missing_columns:
             print(f"Error: Missing essential columns: {', '.join(missing_columns)}")
             sys.exit(1)
+        
+        total_rows = sum(1 for _ in reader)
+        csvfile.seek(0)
+        next(reader)
 
-        for current_row_number, row in enumerate(reader):
-            if current_row_number <= last_processed_row:
-                continue
-            
-            video_name = row.get('name')
-            video_tags = row.get('tags', '')
-            video_description = row.get('description', '')
-            video_long_description = row.get('long_description', '')
-            video_url = row.get('video_url')
-            poster = row.get('poster', '')
-            thumbnail = row.get('thumbnail', '')
+        with tqdm (total=total_rows, desc="Processing CSV", unit="row", ascii = "─┄┈┉┅━") as pbar:
+            for current_row_number, row in enumerate(reader):
+                if current_row_number <= last_processed_row:
+                    pbar.update(1)
+                    continue
+                
+                video_name = row.get('name')
+                video_tags = row.get('tags', '')
+                video_description = row.get('description', '')
+                video_long_description = row.get('long_description', '')
+                video_url = row.get('video_url')
+                poster = row.get('poster', '')
+                thumbnail = row.get('thumbnail', '')
 
-            video_tags = format_tags(video_tags)
-            is_valid, error_message = valid_video_url(video_url)
-            if is_valid:
-                create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail)
-                save_last_processed_row(current_row_number)
-            else:
-                print(f"Skipping {current_row_number}: {error_message}")
+                video_tags = format_tags(video_tags)
+                is_valid, error_message = valid_video_url(video_url)
+                if is_valid:
+                    create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail)
+                    save_last_processed_row(current_row_number)
+                else:
+                    print(f"Skipping {current_row_number}: {error_message}")
+                
+                pbar.update(1)
             
     if os.path.exists(last_processed_row_path):
         with open(last_processed_row_path, 'r') as file:
@@ -141,11 +150,11 @@ def create_media_object(video_name, video_tags, video_description, video_long_de
         add_remote_src(response_dict['id'], video_url)
         if poster and not thumbnail:
             thumbnail = poster
-            print(f"{response_dict['id']}: No thumbnail image. Using poster image.")
+            tqdm.write(f"{response_dict['id']}: No thumbnail image. Using poster image.")
         if poster:
             ingest_images(poster, thumbnail, response_dict['id'])
         else:
-            print(f"Skipping {response_dict['id']} as there are no high res images to ingest.")
+            tqdm.write(f"Skipping {response_dict['id']} as there are no high res images to ingest.")
     else:
         raise AttributeError(f"Failed to create object: {response.status_code}, {response.text}")
 
@@ -182,7 +191,7 @@ def add_remote_src(video_id, video_url):
 
     if response.status_code in [200, 201]:
         response_dict = json.loads(response.text)
-        # print(response_dict['id'])
+        tqdm.write(response_dict['id'])
     else:
         print(f"Failed to add remote video: {response.status_code}, {response.text}")
 
@@ -203,7 +212,7 @@ def ingest_images(poster, thumbnail, video_id):
 
     if response.status_code in [200, 201]:
         response_dict = json.loads(response.text)
-        print(f"{video_id}: {response_dict['id']} - Ingest successful.")
+        tqdm.write(f"{video_id}: {response_dict['id']} - Ingest successful.")
     else:
         print(f"Failed to ingest images: {response.status_code}, {response.text}")
 
