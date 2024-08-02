@@ -85,10 +85,10 @@ def read_csv():
             if current_row_number <= last_processed_row:
                 continue
 
-            video_name, video_tags, video_description, video_long_description, video_url = row['name'], row['tags'], row['description'], row['long_description'], row['video_url']
+            video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail = row['name'], row['tags'], row['description'], row['long_description'], row['video_url'], row['poster'], row['thumbnail']
             video_tags = format_tags(video_tags)
             is_valid_video_url(video_url)
-            create_media_object(video_name, video_tags, video_description, video_long_description, video_url)
+            create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail)
             save_last_processed_row(current_row_number)
 
             
@@ -103,7 +103,7 @@ def read_csv():
                 print(f"{last_processed_row_path} is already empty.")
         print("CSV processing has finished.")
 
-def create_media_object(video_name, video_tags, video_description, video_long_description, video_url):
+def create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail):
     auth = BrightcoveAuth()
     headers = auth.get_headers()
 
@@ -119,13 +119,19 @@ def create_media_object(video_name, video_tags, video_description, video_long_de
     if response.status_code in [200, 201]:
         response_dict = json.loads(response.text)
         add_remote_src(response_dict['id'], video_url)
+        if poster and not thumbnail:
+            thumbnail = poster
+            print(f"{response_dict['id']}: No thumbnail image. Using poster image.")
+        if poster:
+            ingest_images(poster, thumbnail, response_dict['id'])
+        else:
+            print(f"Skipping {response_dict['id']} as there are no high res images to ingest.")
     else:
-        print(f"Failed to create object: {response.status_code}, {response.text}")
+        raise AttributeError(f"Failed to create object: {response.status_code}, {response.text}")
 
 def add_remote_src(video_id, video_url):
     container = get_container(video_url)
-    print(container)
-    if container == 'mp4':
+    if container == 'MP4':
         auth = BrightcoveAuth()
         headers = auth.get_headers()
         url = f'https://cms.api.brightcove.com/v1/accounts/{auth.account_id}/videos/{video_id}/assets/renditions'
@@ -156,10 +162,30 @@ def add_remote_src(video_id, video_url):
 
     if response.status_code in [200, 201]:
         response_dict = json.loads(response.text)
-
-        print(response_dict['id'])
+        # print(response_dict['id'])
     else:
         print(f"Failed to add remote video: {response.status_code}, {response.text}")
+
+def ingest_images(poster, thumbnail, video_id):
+    auth = BrightcoveAuth()
+    headers = auth.get_headers()
+    url = f'https://ingest.api.brightcove.com/v1/accounts/{auth.account_id}/videos/{video_id}/ingest-requests'
+    payload = {
+        "profile": f"{ingest_profile}",
+        "poster": {
+            "url": f"{poster}"
+        },
+        "thumbnail": {
+            "url": f"{thumbnail}"
+        }
+    }
+    response = requests.post(url, data=json.dumps(payload), headers=headers)
+
+    if response.status_code in [200, 201]:
+        response_dict = json.loads(response.text)
+        print(f"{video_id}: {response_dict['id']} - Ingest successful.")
+    else:
+        print(f"Failed to ingest images: {response.status_code}, {response.text}")
 
 def main():
     read_csv()
