@@ -3,8 +3,10 @@ from dotenv import load_dotenv
 import requests
 import json
 import csv
+import sys
 import os
 import re
+import validators
 
 load_dotenv()
 
@@ -16,7 +18,7 @@ last_processed_row_path = os.getenv('LAST_PROCESSED_PATH')
 last_processed_row_file = 'last_processed_row.txt'
 last_processed_row_path = os.path.join(last_processed_row_path, last_processed_row_file)
 
-vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv))$'
+vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv|mpd|m3u8))$'
 
 def get_container(video_url):
     if video_url.endswith('.m3u8'):
@@ -67,13 +69,15 @@ def format_tags(tags):
     # return json.dumps(tags_list)
     return tags_list
 
-def is_valid_video_url(video_url):
-    # Check if video_url is a string and perform validations
+def valid_video_url(video_url):
     if isinstance(video_url, str):
-        if re.match(vid_url_pattern, video_url):
-            return True, None
+        if validators.url(video_url):
+            if re.match(vid_url_pattern, video_url):
+                return True, None
+            else:
+                return False, "Provided URL is not a valid URL path or video format"
         else:
-            return False, "Provided URL is not a valid URL path or video format"
+            return False, "Provided URL is not a valid URL"
     else:
         return False, "URL is not a string or is missing"
 
@@ -81,16 +85,32 @@ def read_csv():
     last_processed_row = get_last_processed_row()
     with open(csv_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
+
+        mandatory_columns = ['name', 'video_url']
+        missing_columns = [col for col in mandatory_columns if col not in reader.fieldnames]
+        if missing_columns:
+            print(f"Error: Missing essential columns: {', '.join(missing_columns)}")
+            sys.exit(1)
+
         for current_row_number, row in enumerate(reader):
             if current_row_number <= last_processed_row:
                 continue
+            
+            video_name = row.get('name')
+            video_tags = row.get('tags', '')
+            video_description = row.get('description', '')
+            video_long_description = row.get('long_description', '')
+            video_url = row.get('video_url')
+            poster = row.get('poster', '')
+            thumbnail = row.get('thumbnail', '')
 
-            video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail = row['name'], row['tags'], row['description'], row['long_description'], row['video_url'], row['poster'], row['thumbnail']
             video_tags = format_tags(video_tags)
-            is_valid_video_url(video_url)
-            create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail)
-            save_last_processed_row(current_row_number)
-
+            is_valid, error_message = valid_video_url(video_url)
+            if is_valid:
+                create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail)
+                save_last_processed_row(current_row_number)
+            else:
+                print(f"Skipping {current_row_number}: {error_message}")
             
     if os.path.exists(last_processed_row_path):
         with open(last_processed_row_path, 'r') as file:
