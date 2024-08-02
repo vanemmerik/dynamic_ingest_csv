@@ -9,8 +9,11 @@ import re
 import validators
 from tqdm import tqdm
 from colorama import Fore, Style, init
+import subprocess
 
 load_dotenv()
+
+caffeinate_process = subprocess.Popen(['caffeinate', '-dims'])
 
 ingest_profile = os.getenv('INGEST_PROFILE')
 csv_dir = os.getenv('CSV_PATH')
@@ -134,6 +137,7 @@ def read_csv():
             else:
                 print(f"{last_processed_row_path} is already empty.")
         print("CSV processing has finished.")
+        caffeinate_process.terminate()
 
 def create_media_object(video_name, video_tags, video_description, video_long_description, video_url, poster, thumbnail):
     auth = BrightcoveAuth()
