@@ -8,6 +8,7 @@ import os
 import re
 import validators
 from tqdm import tqdm
+from colorama import Fore, Style, init
 
 load_dotenv()
 
@@ -20,6 +21,8 @@ last_processed_row_file = 'last_processed_row.txt'
 last_processed_row_path = os.path.join(last_processed_row_path, last_processed_row_file)
 
 vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv|mpd|m3u8))$'
+
+bar_format = "{l_bar}%s{bar}%s{r_bar}" % (Fore.RED, Style.RESET_ALL)
 
 def get_container(video_url):
     if video_url.endswith('.m3u8'):
@@ -97,7 +100,7 @@ def read_csv():
         csvfile.seek(0)
         next(reader)
 
-        with tqdm (total=total_rows, desc="Processing CSV", unit="row", ascii = "─┄┈┉┅━") as pbar:
+        with tqdm (total=total_rows, desc="Processing CSV", unit="row", ascii = "─┄┈┉┅━", bar_format=bar_format) as pbar:
             for current_row_number, row in enumerate(reader):
                 if current_row_number <= last_processed_row:
                     pbar.update(1)
