@@ -25,7 +25,7 @@ last_processed_row_path = os.path.join(last_processed_row_path, last_processed_r
 
 vid_url_pattern = r'^(https?://|s3://)[^/]+/(?:.+/)?[^/]+(?:\.(mp4|mov|avi|mkv|mpd|m3u8))$'
 
-bar_format = "{l_bar}%s{bar}%s{r_bar}" % (Fore.RED, Style.RESET_ALL)
+bar_format = f"{Fore.GREEN}{{l_bar}}{Fore.CYAN}{{bar}}{Fore.GREEN}{{r_bar}}{Style.RESET_ALL}"
 
 def get_container(video_url):
     if video_url.endswith('.m3u8'):
